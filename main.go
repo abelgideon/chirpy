@@ -60,11 +60,13 @@ func main() {
 	mux.HandleFunc("POST /admin/reset", myConfig.handlerReset)
 	mux.HandleFunc("POST /api/users", myConfig.handlerCreateUser)
 	mux.HandleFunc("POST /api/chirps", myConfig.handlerCreateChirp)
+	mux.HandleFunc("GET /api/chirps", myConfig.handlerGetChirps)
+	mux.HandleFunc("GET /api/chirps/{chirpID}", myConfig.handlerGetChirp)
+
 	server := http.Server{
 		Handler: mux,
 		Addr:    ":8080",
 	}
 
 	server.ListenAndServe()
-
 }
