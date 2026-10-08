@@ -5,11 +5,15 @@ import (
 	"log"
 	"net/http"
 	"strings"
+
+	"github.com/abelgideon/chirpy/internal/database"
+	"github.com/google/uuid"
 )
 
-func handlerValidateChirp(w http.ResponseWriter, r *http.Request) {
+func (cfg *apiConfig) handlerCreateChirp(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
-		Body string `json:"body"`
+		Body   string    `json:"body"`
+		UserID uuid.UUID `json:"user_id"`
 	}
 
 	decoder := json.NewDecoder(r.Body)
@@ -38,5 +42,20 @@ func handlerValidateChirp(w http.ResponseWriter, r *http.Request) {
 		}
 	}
 
-	respondWithJSON(w, 200, map[string]string{"cleaned_body": strings.Join(cleaned, " ")})
+	chirp, err := cfg.db.CreateChirp(r.Context(), database.CreateChirpParams{
+		Body:   strings.Join(cleaned, " "),
+		UserID: params.UserID,
+	})
+	if err != nil {
+		respondWithError(w, 500, "error creating chirp")
+		return
+	}
+
+	respondWithJSON(w, 201, Chirp{
+		ID:        chirp.ID,
+		CreatedAt: chirp.CreatedAt,
+		UpdatedAt: chirp.UpdatedAt,
+		Body:      chirp.Body,
+		UserID:    chirp.UserID,
+	})
 }
