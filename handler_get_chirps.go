@@ -2,6 +2,7 @@ package main
 
 import (
 	"net/http"
+	"sort"
 
 	"github.com/abelgideon/chirpy/internal/database"
 	"github.com/google/uuid"
@@ -10,6 +11,7 @@ import (
 func (cfg *apiConfig) handlerGetChirps(w http.ResponseWriter, r *http.Request) {
 	query := r.URL.Query()
 	userIDQuery := query.Get("author_id")
+	sortQuery := query.Get("sort")
 
 	var chirps []database.Chirp
 	var err error
@@ -32,6 +34,16 @@ func (cfg *apiConfig) handlerGetChirps(w http.ResponseWriter, r *http.Request) {
 			respondWithError(w, http.StatusInternalServerError, "error fetching chirps")
 			return
 		}
+	}
+
+	if sortQuery == "asc" {
+		sort.Slice(chirps, func(i, j int) bool {
+			return chirps[i].CreatedAt.Before(chirps[j].CreatedAt)
+		})
+	} else if sortQuery == "desc" {
+		sort.Slice(chirps, func(i, j int) bool {
+			return chirps[i].CreatedAt.After(chirps[j].CreatedAt)
+		})
 	}
 
 	chirpsList := []Chirp{}
