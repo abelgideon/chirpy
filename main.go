@@ -27,6 +27,7 @@ type User struct {
 	UpdatedAt time.Time `json:"updated_at"`
 	Email     string    `json:"email"`
 	Token     string    `json:"token"`
+	RefToken  string    `json:"refresh_token"`
 }
 
 type Chirp struct {
@@ -68,6 +69,8 @@ func main() {
 	mux.HandleFunc("GET /api/chirps", myConfig.handlerGetChirps)
 	mux.HandleFunc("GET /api/chirps/{chirpID}", myConfig.handlerGetChirp)
 	mux.HandleFunc("POST /api/login", myConfig.handlerLogin)
+	mux.HandleFunc("POST /api/refresh", myConfig.handlerRefresh)
+	mux.HandleFunc("POST /api/revoke", myConfig.handlerRevoke)
 
 	server := http.Server{
 		Handler: mux,

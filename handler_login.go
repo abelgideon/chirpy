@@ -6,13 +6,13 @@ import (
 	"time"
 
 	"github.com/abelgideon/chirpy/internal/auth"
+	"github.com/abelgideon/chirpy/internal/database"
 )
 
 func (cfg *apiConfig) handlerLogin(w http.ResponseWriter, r *http.Request) {
 	type parameters struct {
-		Email     string `json:"email"`
-		Password  string `json:"password"`
-		ExpiresAt *int   `json:"expires_in_seconds"`
+		Email    string `json:"email"`
+		Password string `json:"password"`
 	}
 
 	decoder := json.NewDecoder(r.Body)
@@ -41,17 +41,20 @@ func (cfg *apiConfig) handlerLogin(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	var expiresAt int
-
-	if param.ExpiresAt == nil || *param.ExpiresAt*int(time.Second) > int(time.Hour) {
-		expiresAt = int(time.Hour)
-	} else {
-		expiresAt = *param.ExpiresAt * int(time.Second)
-	}
-
-	tk, err := auth.MakeJWT(user.ID, cfg.secret, time.Duration(expiresAt))
+	tk, err := auth.MakeJWT(user.ID, cfg.secret, time.Duration(time.Hour))
 	if err != nil {
 		respondWithError(w, http.StatusInternalServerError, "error generating token")
+		return
+	}
+
+	refToken := auth.MakeRefreshToken()
+	genRefTk, err := cfg.db.CreateRefreshToken(r.Context(), database.CreateRefreshTokenParams{
+		Token:     refToken,
+		UserID:    user.ID,
+		ExpiresAt: time.Now().Add(time.Hour * 24 * 60),
+	})
+	if err != nil {
+		respondWithError(w, http.StatusInternalServerError, "error generating refresh token")
 		return
 	}
 
@@ -61,5 +64,6 @@ func (cfg *apiConfig) handlerLogin(w http.ResponseWriter, r *http.Request) {
 		UpdatedAt: user.UpdatedAt,
 		Email:     user.Email,
 		Token:     tk,
+		RefToken:  genRefTk.Token,
 	})
 }
