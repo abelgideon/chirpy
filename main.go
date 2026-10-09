@@ -62,6 +62,7 @@ func main() {
 	mux.HandleFunc("POST /api/chirps", myConfig.handlerCreateChirp)
 	mux.HandleFunc("GET /api/chirps", myConfig.handlerGetChirps)
 	mux.HandleFunc("GET /api/chirps/{chirpID}", myConfig.handlerGetChirp)
+	mux.HandleFunc("POST /api/login", myConfig.handlerLogin)
 
 	server := http.Server{
 		Handler: mux,
