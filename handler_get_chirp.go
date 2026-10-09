@@ -11,15 +11,17 @@ func (cfg *apiConfig) handlerGetChirp(w http.ResponseWriter, r *http.Request) {
 
 	chirpID, err := uuid.Parse(pathParam)
 	if err != nil {
-		respondWithError(w, 400, "invalid id")
+		respondWithError(w, http.StatusBadRequest, "invalid id")
+		return
 	}
 
 	chirp, err := cfg.db.GetChirp(r.Context(), chirpID)
 	if err != nil {
-		respondWithError(w, 404, "chirp not found")
+		respondWithError(w, http.StatusNotFound, "chirp not found")
+		return
 	}
 
-	respondWithJSON(w, 200, Chirp{
+	respondWithJSON(w, http.StatusOK, Chirp{
 		ID:        chirp.ID,
 		CreatedAt: chirp.CreatedAt,
 		UpdatedAt: chirp.UpdatedAt,
