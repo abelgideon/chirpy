@@ -6,14 +6,25 @@ import (
 	"net/http"
 	"strings"
 
+	"github.com/abelgideon/chirpy/internal/auth"
 	"github.com/abelgideon/chirpy/internal/database"
-	"github.com/google/uuid"
 )
 
 func (cfg *apiConfig) handlerCreateChirp(w http.ResponseWriter, r *http.Request) {
+	tk, bearerErr := auth.GetBearerToken(r.Header)
+	if bearerErr != nil {
+		respondWithError(w, http.StatusUnauthorized, "you are not authenticated")
+		return
+	}
+
+	userID, valErr := auth.ValidateJWT(tk, cfg.secret)
+	if valErr != nil {
+		respondWithError(w, http.StatusUnauthorized, "you are not authenticated")
+		return
+	}
+
 	type parameters struct {
-		Body   string    `json:"body"`
-		UserID uuid.UUID `json:"user_id"`
+		Body string `json:"body"`
 	}
 
 	decoder := json.NewDecoder(r.Body)
@@ -21,12 +32,12 @@ func (cfg *apiConfig) handlerCreateChirp(w http.ResponseWriter, r *http.Request)
 	err := decoder.Decode(&params)
 	if err != nil {
 		log.Printf("error decoding parameters: %s", err)
-		w.WriteHeader(500)
+		w.WriteHeader(http.StatusBadRequest)
 		return
 	}
 
 	if len(params.Body) > 140 {
-		respondWithError(w, 400, "Chirp is too long")
+		respondWithError(w, http.StatusBadRequest, "Chirp is too long")
 		return
 	}
 
@@ -44,10 +55,10 @@ func (cfg *apiConfig) handlerCreateChirp(w http.ResponseWriter, r *http.Request)
 
 	chirp, err := cfg.db.CreateChirp(r.Context(), database.CreateChirpParams{
 		Body:   strings.Join(cleaned, " "),
-		UserID: params.UserID,
+		UserID: userID,
 	})
 	if err != nil {
-		respondWithError(w, 500, "error creating chirp")
+		respondWithError(w, http.StatusInternalServerError, "error creating chirp")
 		return
 	}
 
