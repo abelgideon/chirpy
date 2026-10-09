@@ -57,3 +57,23 @@ func MakeRefreshToken() string {
 	tk := hex.EncodeToString(rands)
 	return tk
 }
+
+func GetAPIKey(headers http.Header) (string, error) {
+	authHead := headers.Get("Authorization")
+
+	if authHead == "" {
+		return "", fmt.Errorf("no authorization header")
+	}
+
+	after, found := strings.CutPrefix(authHead, "ApiKey ")
+	if !found {
+		return "", fmt.Errorf("unknown authorization format")
+	}
+
+	trimmed := strings.TrimSpace(after)
+	if trimmed == "" {
+		return "", fmt.Errorf("unknown authorization format")
+	}
+
+	return trimmed, nil
+}
